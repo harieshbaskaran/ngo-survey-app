@@ -35,8 +35,18 @@ st.markdown(
     /* SIDEBAR */
 
     section[data-testid="stSidebar"] {
-        width: 260px !important;
+        width: 300px !important;
         background-color: #1E1E2F;
+    }
+
+    /* SIDEBAR TOGGLE BUTTON */
+
+    [data-testid="collapsedControl"] {
+        color: white !important;
+        background-color: #1E1E2F !important;
+        border-radius: 10px;
+        padding: 6px;
+        margin-top: 10px;
     }
 
     /* REMOVE STREAMLIT HEADER */
@@ -51,16 +61,18 @@ st.markdown(
         visibility: hidden;
     }
 
-    /* REMOVE TOP RIGHT DEPLOY BUTTON */
+    /* REMOVE DEPLOY BUTTON */
 
     .stDeployButton {
         display: none;
     }
 
-    /* REMOVE SIDEBAR COLLAPSE BUTTON */
+    /* MAIN CONTENT PADDING */
 
-    [data-testid="collapsedControl"] {
-        display: none;
+    .main .block-container {
+        padding-top: 2rem;
+        padding-left: 2rem;
+        padding-right: 2rem;
     }
 
     /* TITLE STYLE */
@@ -71,7 +83,7 @@ st.markdown(
         color: white !important;
     }
 
-    /* SUBHEADER */
+    /* SUBHEADERS */
 
     h2, h3 {
         color: white !important;
@@ -98,6 +110,12 @@ st.markdown(
         background-color: #1E1E2F;
         border-radius: 15px;
         padding: 15px;
+    }
+
+    /* DATAFRAME */
+
+    .stDataFrame {
+        border-radius: 10px;
     }
 
     </style>
