@@ -1,8 +1,11 @@
 import streamlit as st
 import pandas as pd
 import io
-
 import snowflake.connector
+
+# -----------------------------------
+# SNOWFLAKE CONNECTION
+# -----------------------------------
 
 conn = snowflake.connector.connect(
     user=st.secrets["snowflake"]["user"],
@@ -35,7 +38,7 @@ users = {
 }
 
 # -----------------------------------
-# LOGIN SESSION
+# SESSION STATE
 # -----------------------------------
 
 if "logged_in" not in st.session_state:
@@ -48,7 +51,7 @@ if "role" not in st.session_state:
     st.session_state.role = ""
 
 # -----------------------------------
-# PAGE CONFIGURATION
+# PAGE CONFIG
 # -----------------------------------
 
 st.set_page_config(
@@ -58,7 +61,7 @@ st.set_page_config(
 )
 
 # -----------------------------------
-# LOGIN SYSTEM
+# LOGIN PAGE
 # -----------------------------------
 
 if not st.session_state.logged_in:
@@ -81,20 +84,20 @@ if not st.session_state.logged_in:
             if users[username]["password"] == password:
 
                 st.session_state.logged_in = True
-
                 st.session_state.username = username
-
                 st.session_state.role = users[username]["role"]
 
-                st.success("Login Successful!")
+                st.success("✅ Login Successful!")
 
                 st.rerun()
 
             else:
-                st.error("Invalid Password")
+
+                st.error("❌ Invalid Password")
 
         else:
-            st.error("Invalid Username")
+
+            st.error("❌ Invalid Username")
 
     st.stop()
 
@@ -117,17 +120,13 @@ st.sidebar.markdown("---")
 if st.sidebar.button("🚪 Logout"):
 
     st.session_state.logged_in = False
-
     st.session_state.username = ""
-
     st.session_state.role = ""
 
     st.rerun()
 
-st.sidebar.markdown("---")
-
 # -----------------------------------
-# ROLE-BASED MENU
+# MENU
 # -----------------------------------
 
 if st.session_state.role == "Admin":
@@ -164,11 +163,23 @@ if menu == "🏠 Home":
 
     st.markdown("---")
 
+    query = "SELECT * FROM BEGGAR_SURVEY"
+
+    df = pd.read_sql(query, conn)
+
     col1, col2, col3 = st.columns(3)
 
-    col1.metric("Total Surveys", "0")
-    col2.metric("Survey Members", "10")
-    col3.metric("Areas Covered", "0")
+    col1.metric("Total Surveys", len(df))
+
+    col2.metric(
+        "Survey Members",
+        df["SURVEY_MEMBER"].nunique()
+    )
+
+    col3.metric(
+        "Areas Covered",
+        df["LOCATION"].nunique()
+    )
 
     st.markdown("---")
 
@@ -192,8 +203,6 @@ elif menu == "📝 New Survey":
 
         col1, col2 = st.columns(2)
 
-        # LEFT SIDE
-
         with col1:
 
             survey_member = st.text_input(
@@ -214,8 +223,6 @@ elif menu == "📝 New Survey":
                 "Gender",
                 ["Male", "Female", "Other"]
             )
-
-        # RIGHT SIDE
 
         with col2:
 
@@ -238,14 +245,10 @@ elif menu == "📝 New Survey":
                 ["Yes", "No"]
             )
 
-            # PHOTO UPLOAD
-
             uploaded_photo = st.file_uploader(
                 "Upload Photo",
                 type=["jpg", "jpeg", "png"]
             )
-
-            # IMAGE PREVIEW
 
             if uploaded_photo is not None:
 
@@ -255,19 +258,13 @@ elif menu == "📝 New Survey":
                     width=250
                 )
 
-        # NOTES
-
         notes = st.text_area(
             "Additional Notes"
         )
 
-        # SUBMIT BUTTON
-
         submitted = st.form_submit_button(
             "Submit Survey"
         )
-
-        # SAVE DATA
 
         if submitted:
 
@@ -300,12 +297,16 @@ elif menu == "📝 New Survey":
             )
             """
 
-            session.sql(insert_query).collect()
+            session.execute(insert_query)
 
-            st.success("✅ Survey Submitted Successfully!")
+            conn.commit()
+
+            st.success(
+                "✅ Survey Submitted Successfully!"
+            )
 
 # -----------------------------------
-# DASHBOARD PAGE
+# DASHBOARD
 # -----------------------------------
 
 elif menu == "📊 Dashboard":
@@ -316,15 +317,17 @@ elif menu == "📊 Dashboard":
 
     query = "SELECT * FROM BEGGAR_SURVEY"
 
-    df = session.sql(query).to_pandas()
-
-    # KPIs
+    df = pd.read_sql(query, conn)
 
     total_surveys = len(df)
 
-    total_male = len(df[df["GENDER"] == "Male"])
+    total_male = len(
+        df[df["GENDER"] == "Male"]
+    )
 
-    total_female = len(df[df["GENDER"] == "Female"])
+    total_female = len(
+        df[df["GENDER"] == "Female"]
+    )
 
     total_disability = len(
         df[df["DISABILITY"] == "Yes"]
@@ -340,19 +343,37 @@ elif menu == "📊 Dashboard":
 
     col1, col2, col3 = st.columns(3)
 
-    col1.metric("Total Surveys", total_surveys)
+    col1.metric(
+        "Total Surveys",
+        total_surveys
+    )
 
-    col2.metric("Male", total_male)
+    col2.metric(
+        "Male",
+        total_male
+    )
 
-    col3.metric("Female", total_female)
+    col3.metric(
+        "Female",
+        total_female
+    )
 
     col4, col5, col6 = st.columns(3)
 
-    col4.metric("Disability", total_disability)
+    col4.metric(
+        "Disability",
+        total_disability
+    )
 
-    col5.metric("Addiction", total_addiction)
+    col5.metric(
+        "Addiction",
+        total_addiction
+    )
 
-    col6.metric("Shelter Needed", shelter_needed)
+    col6.metric(
+        "Shelter Needed",
+        shelter_needed
+    )
 
     st.markdown("---")
 
@@ -366,7 +387,7 @@ elif menu == "📊 Dashboard":
 
     st.markdown("---")
 
-    # LOCATION ANALYSIS
+    # LOCATION CHART
 
     st.subheader("Location Analysis")
 
@@ -376,7 +397,7 @@ elif menu == "📊 Dashboard":
 
     st.markdown("---")
 
-    # SEARCH + FILTERS
+    # FILTERS
 
     st.subheader("🔍 Search & Filters")
 
@@ -418,10 +439,6 @@ elif menu == "📊 Dashboard":
             filtered_df["GENDER"] == selected_gender
         ]
 
-    st.markdown("---")
-
-    st.subheader("Filtered Results")
-
     st.dataframe(
         filtered_df,
         use_container_width=True
@@ -433,7 +450,9 @@ elif menu == "📊 Dashboard":
 
     st.subheader("👥 Survey Member Performance")
 
-    member_data = df["SURVEY_MEMBER"].value_counts()
+    member_data = df[
+        "SURVEY_MEMBER"
+    ].value_counts()
 
     st.bar_chart(member_data)
 
@@ -462,11 +481,14 @@ elif menu == "📥 Downloads":
 
     query = "SELECT * FROM BEGGAR_SURVEY"
 
-    df = session.sql(query).to_pandas()
+    df = pd.read_sql(query, conn)
 
     st.subheader("Survey Data")
 
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(
+        df,
+        use_container_width=True
+    )
 
     st.markdown("---")
 
@@ -480,8 +502,6 @@ elif menu == "📥 Downloads":
         file_name="ngo_survey_data.csv",
         mime="text/csv"
     )
-
-    st.markdown("")
 
     # EXCEL DOWNLOAD
 
@@ -519,7 +539,7 @@ elif menu == "⚙️ Admin":
 
     query = "SELECT * FROM BEGGAR_SURVEY"
 
-    df = session.sql(query).to_pandas()
+    df = pd.read_sql(query, conn)
 
     st.subheader("All Survey Records")
 
@@ -547,120 +567,6 @@ elif menu == "⚙️ Admin":
 
     st.markdown("---")
 
-    # EDIT RECORD
-
-    st.subheader("✏️ Edit Survey Record")
-
-    edit_id = st.number_input(
-        "Enter Survey ID to Edit",
-        min_value=1,
-        step=1,
-        key="edit_id"
-    )
-
-    load_button = st.button("Load Record")
-
-    if load_button:
-
-        edit_query = f"""
-        SELECT * FROM BEGGAR_SURVEY
-        WHERE SURVEY_ID = {edit_id}
-        """
-
-        edit_df = session.sql(edit_query).to_pandas()
-
-        if len(edit_df) > 0:
-
-            st.session_state.edit_record = edit_df.iloc[0]
-
-        else:
-
-            st.error("Record not found!")
-
-    # EDIT FORM
-
-    if "edit_record" in st.session_state:
-
-        record = st.session_state.edit_record
-
-        with st.form("edit_form"):
-
-            updated_member = st.text_input(
-                "Survey Member",
-                value=record["SURVEY_MEMBER"]
-            )
-
-            updated_name = st.text_input(
-                "Beggar Name",
-                value=record["BEGGAR_NAME"]
-            )
-
-            updated_age = st.number_input(
-                "Age",
-                min_value=0,
-                max_value=120,
-                value=int(record["AGE"])
-            )
-
-            updated_gender = st.selectbox(
-                "Gender",
-                ["Male", "Female", "Other"]
-            )
-
-            updated_location = st.text_input(
-                "Location",
-                value=record["LOCATION"]
-            )
-
-            updated_disability = st.selectbox(
-                "Disability",
-                ["Yes", "No"]
-            )
-
-            updated_addiction = st.selectbox(
-                "Addiction",
-                ["Yes", "No"]
-            )
-
-            updated_shelter = st.selectbox(
-                "Shelter Needed",
-                ["Yes", "No"]
-            )
-
-            updated_notes = st.text_area(
-                "Notes",
-                value=record["NOTES"]
-            )
-
-            update_button = st.form_submit_button(
-                "Update Record"
-            )
-
-            if update_button:
-
-                update_query = f"""
-                UPDATE BEGGAR_SURVEY
-                SET
-                    SURVEY_MEMBER = '{updated_member}',
-                    BEGGAR_NAME = '{updated_name}',
-                    AGE = {updated_age},
-                    GENDER = '{updated_gender}',
-                    LOCATION = '{updated_location}',
-                    DISABILITY = '{updated_disability}',
-                    ADDICTION = '{updated_addiction}',
-                    SHELTER_NEEDED = '{updated_shelter}',
-                    NOTES = '{updated_notes}'
-                WHERE SURVEY_ID = {edit_id}
-                """
-
-                session.sql(update_query).collect()
-
-                st.success("✅ Record Updated Successfully!")
-
-                st.rerun()
-
-    st.markdown("---")
-
     # DELETE RECORD
 
     st.subheader("🗑️ Delete Survey Record")
@@ -682,7 +588,9 @@ elif menu == "⚙️ Admin":
         WHERE SURVEY_ID = {delete_id}
         """
 
-        session.sql(delete_query).collect()
+        session.execute(delete_query)
+
+        conn.commit()
 
         st.success(
             f"Record {delete_id} deleted successfully!"
