@@ -1,7 +1,109 @@
+# -----------------------------------
+# IMPORTS
+# -----------------------------------
+
 import streamlit as st
 import pandas as pd
 import io
 import snowflake.connector
+
+# -----------------------------------
+# PAGE CONFIG
+# -----------------------------------
+
+st.set_page_config(
+    page_title="NGO Survey System",
+    page_icon="📋",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# -----------------------------------
+# CUSTOM CSS
+# -----------------------------------
+
+st.markdown(
+    """
+    <style>
+
+    /* MAIN APP */
+
+    .main {
+        background-color: #0E1117;
+    }
+
+    /* SIDEBAR */
+
+    section[data-testid="stSidebar"] {
+        width: 260px !important;
+        background-color: #1E1E2F;
+    }
+
+    /* REMOVE STREAMLIT HEADER */
+
+    header {
+        visibility: hidden;
+    }
+
+    /* REMOVE FOOTER */
+
+    footer {
+        visibility: hidden;
+    }
+
+    /* REMOVE TOP RIGHT DEPLOY BUTTON */
+
+    .stDeployButton {
+        display: none;
+    }
+
+    /* REMOVE SIDEBAR COLLAPSE BUTTON */
+
+    [data-testid="collapsedControl"] {
+        display: none;
+    }
+
+    /* TITLE STYLE */
+
+    h1 {
+        font-size: 42px !important;
+        font-weight: 700 !important;
+        color: white !important;
+    }
+
+    /* SUBHEADER */
+
+    h2, h3 {
+        color: white !important;
+    }
+
+    /* TEXT */
+
+    p, label, div {
+        color: white !important;
+    }
+
+    /* BUTTONS */
+
+    .stButton>button {
+        border-radius: 10px;
+        height: 45px;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    /* METRIC CARDS */
+
+    [data-testid="metric-container"] {
+        background-color: #1E1E2F;
+        border-radius: 15px;
+        padding: 15px;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # -----------------------------------
 # SNOWFLAKE CONNECTION
@@ -51,22 +153,14 @@ if "role" not in st.session_state:
     st.session_state.role = ""
 
 # -----------------------------------
-# PAGE CONFIG
-# -----------------------------------
-
-st.set_page_config(
-    page_title="NGO Survey System",
-    page_icon="📋",
-    layout="wide"
-)
-
-# -----------------------------------
 # LOGIN PAGE
 # -----------------------------------
 
 if not st.session_state.logged_in:
 
     st.title("🔐 NGO Survey Login")
+
+    st.markdown("---")
 
     username = st.text_input("Username")
 
@@ -105,14 +199,16 @@ if not st.session_state.logged_in:
 # SIDEBAR
 # -----------------------------------
 
-st.sidebar.title("📋 NGO Survey System")
-
-st.sidebar.write(
-    f"👤 User: {st.session_state.username}"
+st.sidebar.markdown(
+    "# 📋 NGO Survey"
 )
 
 st.sidebar.write(
-    f"🔑 Role: {st.session_state.role}"
+    f"👤 {st.session_state.username}"
+)
+
+st.sidebar.write(
+    f"🔑 {st.session_state.role}"
 )
 
 st.sidebar.markdown("---")
@@ -169,7 +265,10 @@ if menu == "🏠 Home":
 
     col1, col2, col3 = st.columns(3)
 
-    col1.metric("Total Surveys", len(df))
+    col1.metric(
+        "Total Surveys",
+        len(df)
+    )
 
     col2.metric(
         "Survey Members",
@@ -377,8 +476,6 @@ elif menu == "📊 Dashboard":
 
     st.markdown("---")
 
-    # GENDER CHART
-
     st.subheader("Gender Distribution")
 
     gender_data = df["GENDER"].value_counts()
@@ -387,8 +484,6 @@ elif menu == "📊 Dashboard":
 
     st.markdown("---")
 
-    # LOCATION CHART
-
     st.subheader("Location Analysis")
 
     location_data = df["LOCATION"].value_counts()
@@ -396,8 +491,6 @@ elif menu == "📊 Dashboard":
     st.bar_chart(location_data)
 
     st.markdown("---")
-
-    # FILTERS
 
     st.subheader("🔍 Search & Filters")
 
@@ -446,8 +539,6 @@ elif menu == "📊 Dashboard":
 
     st.markdown("---")
 
-    # MEMBER PERFORMANCE
-
     st.subheader("👥 Survey Member Performance")
 
     member_data = df[
@@ -457,8 +548,6 @@ elif menu == "📊 Dashboard":
     st.bar_chart(member_data)
 
     st.markdown("---")
-
-    # RECENT SURVEYS
 
     st.subheader("Recent Surveys")
 
@@ -492,8 +581,6 @@ elif menu == "📥 Downloads":
 
     st.markdown("---")
 
-    # CSV DOWNLOAD
-
     csv = df.to_csv(index=False)
 
     st.download_button(
@@ -502,8 +589,6 @@ elif menu == "📥 Downloads":
         file_name="ngo_survey_data.csv",
         mime="text/csv"
     )
-
-    # EXCEL DOWNLOAD
 
     excel_buffer = io.BytesIO()
 
@@ -550,8 +635,6 @@ elif menu == "⚙️ Admin":
 
     st.markdown("---")
 
-    # PHOTO RECORDS
-
     st.subheader("📸 Uploaded Photo Records")
 
     photo_df = df[
@@ -566,8 +649,6 @@ elif menu == "⚙️ Admin":
     )
 
     st.markdown("---")
-
-    # DELETE RECORD
 
     st.subheader("🗑️ Delete Survey Record")
 
